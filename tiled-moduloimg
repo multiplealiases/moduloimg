@@ -116,9 +116,9 @@ $((tilelength * tilelength)) tiles will be rendered.
 EOF
 read -rp "Would you like to proceed? (y/N) " response
 case "$response" in
-    y* | Y*) echo 'Proceeding...' ;;
-    n* | N*) echo 'Exiting.'; exit 1 ;;
-    *) echo "I'm choosing to read that as 'n'. Exiting."; exit 1 ;;
+    y* | Y*) 1>&2 echo 'Proceeding...' ;;
+    n* | N*) 1>&2 echo 'Exiting.'; exit 1 ;;
+    *) 1>&2 echo "I'm choosing to read that as 'n'. Exiting."; exit 1 ;;
 esac
 
 parallel -k -j"$jobs" echo "$expression" ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") > "$expressionlist"
