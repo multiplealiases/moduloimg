@@ -109,7 +109,7 @@ tmpdir=$(mktemp -d -p .)
 
 trap 'cleanup' ERR EXIT
 
-cat << EOF
+1>&2 cat << EOF
 The image will be $((tilesize * tilelength)) by $((tilesize * tilelength)) px
 over $tilelength by $tilelength square tiles of length $tilesize.
 $((tilelength * tilelength)) tiles will be rendered.
