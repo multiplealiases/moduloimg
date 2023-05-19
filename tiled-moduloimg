@@ -86,7 +86,7 @@ while true; do
                 exit 1
             fi
             set -o nounset
-            expression="$(quote "$(printf '%s' "$2" | sed 's|n|\(n\+\{1\}\)|g ; s|m|\(m\+\{2\}\)|g')")"
+            expression="$2"
             break
             ;;
         *)
@@ -121,11 +121,8 @@ case "$response" in
     *) 1>&2 echo "I'm choosing to read that as 'n'. Exiting."; exit 1 ;;
 esac
 
-parallel -k -j"$jobs" echo "$expression" ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") > "$expressionlist"
-parallel -k -j"$jobs" printf '%05d-%05d.png\\\n' {1} {2} ::: $(seq 0 "$((tilelength - 1))") ::: $(seq 0 "$((tilelength - 1))") > "$xylist"
-
 pushd "$tmpdir"
-parallel --eta -j"$jobs" --link moduloimg-24bit.py --resolution "$tilesize" {1} "$constant" {2} :::: "$expressionlist" :::: "$xylist"
-gm montage -geometry '1x1<' -tile "${tilelength}x${tilelength}" @"$xylist" ../"$output".png
+parallel --plus --eta -j"$jobs" moduloimg-24bit.py --resolution "$tilesize" -n \{1\} -m \{2\} \"$expression\" "$constant" {0#}.png ::: $(seq 0 "$((tilelength - 1))") ::: $(seq 0 "$((tilelength - 1))")
+gm montage -geometry '1x1<' -tile "${tilelength}x${tilelength}" *.png ../"$output".png
 popd
 
