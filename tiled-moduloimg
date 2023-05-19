@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+
+set -o nounset
+set -o errexit
+
+function banner() {
+    echo Render moduloimg-24bit images in tiles
+}
+
+function usage() {
+    echo Usage: tiled-moduloimg \[options\] expression
+}
+
+function quote ()
+{
+    local quoted=${1//\'/\'\\\'\'};
+    printf "'%s'" "$quoted"
+}
+
+
+function help_text(){
+    cat << EOF
+$(banner)
+$(usage)
+
+Defaults shown in [].
+-l, --length    length of tiling [16]
+-s, --size      length of each square tile in px [256]
+-c, --constant  constant to modulo by [16777216]
+-j, --jobs      number of jobs [$(nproc)]
+-h, --help      this help
+EOF
+}
+
+function file_notexist(){
+    printf ''\''%s'\'': file does not exist\n' "$1"
+    exit 3
+}
+
+function file_none(){
+    echo No file was specified.
+    help_text
+    exit 4
+}
+
+function cleanup(){
+    popd || true
+    rm -rf "$xylist" "$expressionlist" "$tmpdir"
+}
+
+ARGS="$(getopt --options l:,s:,c:,j:,o:,h --long size:,jobs:,length:,constant:,output:,help -- "$@")"
+eval set -- "$ARGS"
+while true; do
+        case "$1" in
+        -h | --help)
+            help_text
+            exit 1
+            ;;
+        -l | --length | --tilelength)
+            tilelength="$2"
+            shift 2
+            ;;
+        -c | --constant)
+            constant="$2"
+            shift 2
+            ;;
+        -s | --size | --tilesize)
+            tilesize="$2"
+            shift 2
+            ;;
+        -j | --jobs)
+            jobs="$2"
+            shift 2
+            ;;
+        -o | --output)
+            output="$2"
+            shift 2
+            ;;
+        --)
+            set +o nounset
+            if [[ -z "$2" ]]
+            then
+                echo "no expression given"
+                exit 1
+            fi
+            set -o nounset
+            expression="$(quote "$(printf '%s' "$2" | sed 's|n|\(n\+\{1\}\)|g ; s|m|\(m\+\{2\}\)|g')")"
+            break
+            ;;
+        *)
+            printf 'How did you get here? The last args I saw were \n%s\n' "$@"
+            exit 1
+            break
+            ;;
+    esac
+done
+tilelength=${tilelength-16}
+tilesize=${tilesize-256}
+constant=${constant:-16777216}
+jobs=${jobs-$(nproc)}
+defaultoutput="$tilesize"-"$tilelength"
+output="${output-defaultoutput}"
+
+xylist=$(mktemp)
+expressionlist=$(mktemp)
+tmpdir=$(mktemp -d -p .)
+
+trap 'cleanup' ERR EXIT
+
+cat << EOF
+The image will be $((tilesize * tilelength)) by $((tilesize * tilelength)) px
+over $tilelength by $tilelength square tiles of length $tilesize.
+$((tilelength * tilelength)) tiles will be rendered.
+EOF
+read -rp "Would you like to proceed? (y/N) " response
+case "$response" in
+    y* | Y*) echo 'Proceeding...' ;;
+    n* | N*) echo 'Exiting.'; exit 1 ;;
+    *) echo "I'm choosing to read that as 'n'. Exiting."; exit 1 ;;
+esac
+
+parallel -k -j"$jobs" echo "$expression" ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") ::: $(seq 0 "$tilesize" "$(( (tilelength - 1) * tilesize ))") > "$expressionlist"
+parallel -k -j"$jobs" printf '%05d-%05d.png\\\n' {1} {2} ::: $(seq 0 "$((tilelength - 1))") ::: $(seq 0 "$((tilelength - 1))") > "$xylist"
+
+pushd "$tmpdir"
+parallel --eta -j"$jobs" --link moduloimg-24bit.py --resolution "$tilesize" {1} "$constant" {2} :::: "$expressionlist" :::: "$xylist"
+gm montage -geometry '1x1<' -tile "${tilelength}x${tilelength}" @"$xylist" ../"$output".png
+popd
+
