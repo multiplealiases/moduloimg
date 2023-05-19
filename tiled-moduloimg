@@ -28,6 +28,7 @@ Defaults shown in [].
 -s, --size      length of each square tile in px [256]
 -c, --constant  constant to modulo by [16777216]
 -j, --jobs      number of jobs [$(nproc)]
+-o, --output    output name
 -h, --help      this help
 EOF
 }
@@ -81,6 +82,7 @@ while true; do
             if [[ -z "$2" ]]
             then
                 echo "no expression given"
+                help_text
                 exit 1
             fi
             set -o nounset
