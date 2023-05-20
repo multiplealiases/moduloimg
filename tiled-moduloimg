@@ -27,6 +27,8 @@ Defaults shown in [].
 -l, --length    length of tiling [16]
 -s, --size      length of each square tile in px [256]
 -c, --constant  constant to modulo by [16777216]
+-n              offset on horizontal axis (+ is leftwards) [0]
+-m              offset on vertical axis (+ is downwards) [0]
 -j, --jobs      number of jobs [$(nproc)]
 -o, --output    output name
 -h, --help      this help
@@ -49,7 +51,7 @@ function cleanup(){
     rm -rf "$xylist" "$expressionlist" "$tmpdir"
 }
 
-ARGS="$(getopt --options l:,s:,c:,j:,o:,h --long size:,jobs:,length:,constant:,output:,help -- "$@")"
+ARGS="$(getopt --options n:,m:,l:,s:,c:,j:,o:,h --long size:,jobs:,length:,constant:,output:,help -- "$@")"
 eval set -- "$ARGS"
 while true; do
         case "$1" in
