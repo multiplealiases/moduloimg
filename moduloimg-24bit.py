@@ -15,16 +15,14 @@ parser.add_argument("expression", type=str)
 parser.add_argument("constant", type=int)
 parser.add_argument("-r", "--resolution", type=int, help="Resolution of the output image")
 parser.add_argument("filename", type=str)
-parser.add_argument("-n", type=int, help="offset of the horizontal axis (+ is left)")
-parser.add_argument("-m", type=int, help="offset of the vertical axis (+ is down)")
+parser.add_argument("-n", type=int, help="offset of the horizontal axis (+ is left)", default=0)
+parser.add_argument("-m", type=int, help="offset of the vertical axis (+ is down)", default=0)
 args = parser.parse_args()
 
 def e(n, m):
     return eval(expression)
 
 args.resolution = args.resolution or args.constant
-args.n = args.n or 0
-args.m = args.m or 0
 
 expression = f"({args.expression}) % {args.constant}"
 start = itertools.product(range(1 + args.m, args.resolution + 1 + args.m), range(1 + args.n, args.resolution + 1 + args.n))
