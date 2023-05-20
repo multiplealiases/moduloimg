@@ -133,7 +133,11 @@ case "$response" in
 esac
 
 pushd "$tmpdir"
-parallel --plus --eta -j"$jobs" moduloimg-24bit.py --resolution "$tilesize" -n \{1\} -m \{2\} \"$expression\" "$constant" {0#}.png ::: $(seq "$offsetn" "$((tilelength - 1 + offsetn))") ::: $(seq "$offsetm" "$((tilelength - 1 + offsetm))")
+
+# The output filenames are transposed so that the images
+# are globbed in the correct order when stitched together
+# {} is redefined to a %09d version of itself so that the glob order is correct
+parallel --rpl '{} sprintf("%09d", {})' --eta -j"$jobs" moduloimg-24bit.py --resolution "$tilesize" -n \{1\} -m \{2\} \"$expression\" "$constant" {2}-{1}.png ::: $(seq "$offsetn" "$tilesize" "$((((tilelength - 1) * tilesize) + offsetn))") ::: $(seq "$offsetn" "$tilesize" "$((((tilelength - 1) * tilesize) + offsetn))")
 gm montage -geometry '1x1<' -tile "${tilelength}x${tilelength}" *.png ../"$output".png
 popd
 
