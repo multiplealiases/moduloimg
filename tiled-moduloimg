@@ -77,6 +77,14 @@ while true; do
             output="$2"
             shift 2
             ;;
+        -n)
+            offsetn="$2"
+            shift 2
+            ;;
+        -m)
+            offsetm="$2"
+            shift 2
+            ;;
         --)
             set +o nounset
             if [[ -z "$2" ]]
@@ -99,6 +107,8 @@ done
 tilelength=${tilelength-16}
 tilesize=${tilesize-256}
 constant=${constant:-16777216}
+offsetn=${offsetn-0}
+offsetm=${offsetm-0}
 jobs=${jobs-$(nproc)}
 defaultoutput="$tilesize"-"$tilelength"
 output="${output-defaultoutput}"
@@ -111,7 +121,8 @@ trap 'cleanup' ERR EXIT
 
 1>&2 cat << EOF
 The image will be $((tilesize * tilelength)) by $((tilesize * tilelength)) px
-over $tilelength by $tilelength square tiles of length $tilesize.
+over $tilelength by $tilelength square tiles of length $tilesize
+starting at offset ($offsetn, $offsetm).
 $((tilelength * tilelength)) tiles will be rendered.
 EOF
 read -rp "Would you like to proceed? (y/N) " response
@@ -122,7 +133,7 @@ case "$response" in
 esac
 
 pushd "$tmpdir"
-parallel --plus --eta -j"$jobs" moduloimg-24bit.py --resolution "$tilesize" -n \{1\} -m \{2\} \"$expression\" "$constant" {0#}.png ::: $(seq 0 "$((tilelength - 1))") ::: $(seq 0 "$((tilelength - 1))")
+parallel --plus --eta -j"$jobs" moduloimg-24bit.py --resolution "$tilesize" -n \{1\} -m \{2\} \"$expression\" "$constant" {0#}.png ::: $(seq "$offsetn" "$((tilelength - 1 + offsetn))") ::: $(seq "$offsetm" "$((tilelength - 1 + offsetm))")
 gm montage -geometry '1x1<' -tile "${tilelength}x${tilelength}" *.png ../"$output".png
 popd
 
