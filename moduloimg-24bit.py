@@ -3,6 +3,7 @@ import itertools
 import argparse
 import io
 import struct
+import random
 from multiprocessing import Pool
 from PIL import Image
 
@@ -17,10 +18,18 @@ parser.add_argument("-r", "--resolution", type=int, help="Resolution of the outp
 parser.add_argument("filename", type=str)
 parser.add_argument("-n", type=int, help="offset of the horizontal axis (+ is left)", default=0)
 parser.add_argument("-m", type=int, help="offset of the vertical axis (+ is down)", default=0)
+parser.add_argument("--random", action='store_true', help="set random n and m offsets")
+
 args = parser.parse_args()
 
 def e(n, m):
     return eval(expression)
+
+if args.random and (args.n or args.m):
+    raise ValueError("--random cannot be set with -n or -m")
+if args.random:
+    args.n = random.randint(0, args.constant - args.resolution)
+    args.m = random.randint(0, args.constant - args.resolution)
 
 args.resolution = args.resolution or args.constant
 
